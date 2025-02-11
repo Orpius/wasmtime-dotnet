@@ -1,3 +1,6 @@
+// DV
+#define USE_API27
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -404,9 +407,16 @@ namespace Wasmtime
         {
             foreach (var dir in _preopenDirs)
             {
+// DV
+#if USE_API27
+                if (!Native.wasi_config_preopen_dir(config, dir.Path, dir.GuestPath, 
+                    new UIntPtr((ulong)3),
+                    new UIntPtr((ulong)3)))
+#else
                 if (!Native.wasi_config_preopen_dir(config, dir.Path, dir.GuestPath))
+#endif
                 {
-                    throw new InvalidOperationException($"Failed to preopen directory '{dir.Path}'.");
+                    throw new InvalidOperationException($"Failed to preopen directory '{dir.Path}'. " + BuildInfo.BuildDateTime);
                 }
             }
         }
@@ -505,6 +515,12 @@ namespace Wasmtime
                 Handle config,
                 [MarshalAs(Extensions.LPUTF8Str)] string path,
                 [MarshalAs(Extensions.LPUTF8Str)] string guestPath
+// DV
+#if USE_API27
+                ,
+				UIntPtr dirPerms,
+				UIntPtr filePerms
+#endif
             );
         }
 

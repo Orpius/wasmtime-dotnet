@@ -9,6 +9,32 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+<!-- Build time -->
+<Target Name="GenerateBuildInfo" BeforeTargets="BeforeCompile">
+	<PropertyGroup>
+		<BuildTimestamp>$([System.DateTime]::UtcNow.Ticks)</BuildTimestamp>
+		<BuildDateTime>$([System.DateTime]::UtcNow.ToString("yyyy-MM-dd HH:mm:ss"))</BuildDateTime>
+		<BuildInfoContent>
+			namespace Wasmtime
+			{
+			    /// <sumary>Contains metadata about the build, including the timestamp and date/time of the build.</sumary>
+			    public static class BuildInfo 
+			    {
+			        /// <sumary>The build timestamp in ticks (UTC).</sumary>
+			        public const long BuildTimestamp = $(BuildTimestamp)%3B
+			        /// <sumary>The date and time of the build in UTC.</sumary>
+			        public const string BuildDateTime = "$(BuildDateTime)"%3B
+			    }
+			}
+		</BuildInfoContent>
+	</PropertyGroup>
+
+	<WriteLinesToFile File="BuildConstants.g.cs"
+	                  Lines="$(BuildInfoContent)"
+	                  Overwrite="true" />
+</Target>
+	<!-- End Build time -->
+
   <PropertyGroup>
     <AssemblyName>Wasmtime.Dotnet</AssemblyName>
     <PackageId>Wasmtime</PackageId>
@@ -148,26 +174,11 @@ The .NET embedding of Wasmtime enables .NET code to instantiate WebAssembly modu
 
   <!-- This target downloads wasmtime and runs before any inner TFM-specific builds -->
   <Target Name="DownloadWasmtime" BeforeTargets="DispatchToInnerBuilds">
-    <DownloadFile
-      Condition="('$(Packing)'=='true' Or '%(Wasmtime.Copy)'=='true') And !Exists('$(BaseIntermediateOutputPath)/$(ReleaseFileNameBase)-%(Wasmtime.Arch)-%(Wasmtime.OS)-c-api.%(Wasmtime.FileExtension)')"
-      SourceUrl="$(ReleaseURLBase)/$(ReleaseFileNameBase)-%(Wasmtime.Arch)-%(Wasmtime.OS)-c-api.%(Wasmtime.FileExtension)"
-      DestinationFolder="$(BaseIntermediateOutputPath)"
-      SkipUnchangedFiles="true"
-    />
+    <DownloadFile Condition="('$(Packing)'=='true' Or '%(Wasmtime.Copy)'=='true') And !Exists('$(BaseIntermediateOutputPath)/$(ReleaseFileNameBase)-%(Wasmtime.Arch)-%(Wasmtime.OS)-c-api.%(Wasmtime.FileExtension)')" SourceUrl="$(ReleaseURLBase)/$(ReleaseFileNameBase)-%(Wasmtime.Arch)-%(Wasmtime.OS)-c-api.%(Wasmtime.FileExtension)" DestinationFolder="$(BaseIntermediateOutputPath)" SkipUnchangedFiles="true" />
 
     <!-- Workaround for https://github.com/msys2/MSYS2-packages/issues/1548 -->
-    <Exec
-      Condition="('$(Packing)'=='true' Or '%(Wasmtime.Copy)'=='true') And %(Wasmtime.FileExtension) == 'tar.xz' And !Exists('$(BaseIntermediateOutputPath)$(ReleaseFileNameBase)-%(Wasmtime.Arch)-%(Wasmtime.OS)-c-api')"
-      Command="xz --decompress --stdout $(ReleaseFileNameBase)-%(Wasmtime.Arch)-%(Wasmtime.OS)-c-api.%(Wasmtime.FileExtension) | tar xf -"
-      WorkingDirectory="$(BaseIntermediateOutputPath)"
-      StandardOutputImportance="Low"
-      StandardErrorImportance="Low"
-    />
-    <Unzip
-      Condition="('$(Packing)'=='true' Or '%(Wasmtime.Copy)'=='true') And %(Wasmtime.FileExtension) == 'zip' And !Exists('$(BaseIntermediateOutputPath)$(ReleaseFileNameBase)-%(Wasmtime.Arch)-%(Wasmtime.OS)-c-api')"
-      SourceFiles="$(BaseIntermediateOutputPath)\$(ReleaseFileNameBase)-%(Wasmtime.Arch)-%(Wasmtime.OS)-c-api.%(Wasmtime.FileExtension)"
-      DestinationFolder="$(BaseIntermediateOutputPath)"
-    />
+    <Exec Condition="('$(Packing)'=='true' Or '%(Wasmtime.Copy)'=='true') And %(Wasmtime.FileExtension) == 'tar.xz' And !Exists('$(BaseIntermediateOutputPath)$(ReleaseFileNameBase)-%(Wasmtime.Arch)-%(Wasmtime.OS)-c-api')" Command="xz --decompress --stdout $(ReleaseFileNameBase)-%(Wasmtime.Arch)-%(Wasmtime.OS)-c-api.%(Wasmtime.FileExtension) | tar xf -" WorkingDirectory="$(BaseIntermediateOutputPath)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
+    <Unzip Condition="('$(Packing)'=='true' Or '%(Wasmtime.Copy)'=='true') And %(Wasmtime.FileExtension) == 'zip' And !Exists('$(BaseIntermediateOutputPath)$(ReleaseFileNameBase)-%(Wasmtime.Arch)-%(Wasmtime.OS)-c-api')" SourceFiles="$(BaseIntermediateOutputPath)\$(ReleaseFileNameBase)-%(Wasmtime.Arch)-%(Wasmtime.OS)-c-api.%(Wasmtime.FileExtension)" DestinationFolder="$(BaseIntermediateOutputPath)" />
 
     <!-- The content here is specifically for packing -->
     <ItemGroup Condition="'$(Packing)'=='true'">
