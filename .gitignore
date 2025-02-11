@@ -9,3 +9,4 @@ bin/
 obj/
 
 BenchmarkDotNet.Artifacts/
+/src/BuildConstants.g.cs
